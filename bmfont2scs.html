@@ -1,3 +1,6 @@
+<script src="libs/FileSaver.js"></script>
+<script src="libs/jszip.min.js"></script>
+
 <script> 
 /** 
 
@@ -13,9 +16,26 @@ https://steamcommunity.com/id/Soundwave2142/
 <body class="main-body">
 
 <div class="main-block">
-    Select bmfont file (.fnt) :
-    <input type="file" id="file-input" single>
-    <div>
+    <div class="upload-div">
+        Select bmfont file (.fnt) :
+        <input type="file" id="file-input" single>
+	</div>
+	
+	<div class="selector-div">
+	
+	    <hr>
+	
+	    <p>
+		    Kerning is limited to 1535 in the game, please select what to do in case amount of kernings from bmfile is bigger than limit
+		</p>
+	
+     	<input type="radio" id="kerning-option-keep" name="kerningOption" value="keep" checked>
+        <label for="kerning-option-keep">Keep limited amount</label>
+        <input type="radio" id="kerning-option-dont" name="kerningOption" value="dontInclude">
+        <label for="kerning-option-dont">Don't include kerning at all</label>
+		
+	</div>
+    <div class="footer-div">
 
         <hr>
         <button type="button" style="display:none;" id="convert-btn"> Convert </button>
@@ -24,6 +44,9 @@ https://steamcommunity.com/id/Soundwave2142/
 </div>
 
 <script>
+
+  var kerningLimit = 1535;
+
   document.getElementById("file-input").addEventListener('change', (event) => {
     document.getElementById("convert-btn").style = "";
   });
@@ -33,7 +56,7 @@ https://steamcommunity.com/id/Soundwave2142/
 	    var fr=new FileReader(); 		
         fr.onload=function(){ 
 			var generalInfo = {
-			    vert_span: find(fr.result, 'base='),
+			    vert_span: find(fr.result, 'lineHeight='),
 				line_spacing: 0,
 				width: find(fr.result, 'scaleW='),
 				height: find(fr.result, 'scaleH='),
@@ -84,18 +107,40 @@ https://steamcommunity.com/id/Soundwave2142/
 		result += '     # \'' + unicode(setOfCoords[0]) + '\'\n';
 	});
 	
-	result += '\n# kerning...\n\n';
-	kerning.forEach(function(setOfKerns){
-	    result += 'kern: ' + setOfKerns[0] + ', ' + setOfKerns[1] + ', ' + setOfKerns[2] + '      # \'' + unicode(setOfKerns[0]) + '\' -> \'' + unicode(setOfKerns[1]) + '\'\n';
-	});
+	if(kerning.length < kerningLimit || document.querySelector('input[name="kerningOption"]:checked').value == 'keep'){
+		result += '\n# kerning...\n\n';
+		
+		var BreakException = {};
+		
+		try {
+		    kerning.forEach(function(setOfKerns, key){
+		        if(key >= kerningLimit){
+			        throw BreakException
+			    }
+		
+	            result += 'kern: ' + setOfKerns[0] + ', ' + setOfKerns[1] + ', ' + setOfKerns[2] + '      # \'' + unicode(setOfKerns[0]) + '\' -> \'' + unicode(setOfKerns[1]) + '\'\n';
+	        });
+        } catch (e) {
+            if (e !== BreakException) throw e;
+        }
+	}
 	
-	download(info.filename + '.font', result);
+	var zip = new JSZip();
+
+	//download(info.filename + '.font', result);
+	zip.file(info.filename + '.font', result);
 	
 	var mat = 'material : "ui.white_font" {\n	texture : "' + info.filename + '.tobj"\n	texture_name : "texture"\n}\n'
-	download(info.filename + '.mat', mat);
+	//download(info.filename + '.mat', mat);
+	zip.file(info.filename + '.mat', mat);
 	
 	var tobj = 'map 2d	' + info.filename + '.tga\naddr\n     clamp_to_edge\n     clamp_to_edge\ncolor_space linear\nnomips\nnocompress\n';
-	download(info.filename + '.tobj', tobj);
+	//download(info.filename + '.tobj', tobj);
+	zip.file(info.filename + '.tobj', tobj);
+
+    zip.generateAsync({type:"blob"}).then(function (blob) {
+        saveAs(blob, "bmfont2scs_" + info.filename + ".zip");
+    });
   }
   
   function unicode(hex){
