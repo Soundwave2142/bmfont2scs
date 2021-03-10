@@ -1,0 +1,28 @@
+#convert-btn:hover {
+    cursor: pointer;
+    background-color: #1770ff;
+}
+
+#convert-btn {
+    border: none;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    background-color: #6673ff;
+    border-radius: 12px;
+}
+
+.main-body {
+    background-color: #a7d0db;
+}
+
+.main-block {
+    text-align: center;
+    margin: 50px;
+    padding: 50px;
+    background-color: #ffffff;
+}
